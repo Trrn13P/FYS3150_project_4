@@ -11,11 +11,6 @@
 using namespace std;
 using namespace arma;
 
-/*
-IKKE VITS MED METROPOLIS OM MAN IKKE FLIPPER
-kjør ca 1 mill MC cycles
-*/
-
 
 /* This function returns N if i=-1, returns 0 if i=N
 and else returns i, for PBC.
@@ -129,13 +124,13 @@ float MC_step(mat spin_matrix,int L, float J, float exp_precalc[17]){
   float a = r-exponential_func;
   float b = a/abs(a);
   float c = (1-b)/2;
+  /* Flips the matrix element back if spin is rejected*/
+  spin_matrix(i,j) = spin_matrix(i,j)*(-1)*b;
   return c*deltaE;
 }
 
 
 void MC_solve(mat spin_matrix,int L,float J,int mc_cycles){
-
-
   float T = 1.2; float k = 1;
   float beta = k*T;
 
@@ -153,6 +148,7 @@ void MC_solve(mat spin_matrix,int L,float J,int mc_cycles){
   for(int i=1;i<mc_cycles;i++){
     deltaE = MC_step(spin_matrix,L,J,exp_precalc);
     energies(i)=energies(i-1)+ deltaE;
+    cout << system_energy(spin_matrix,L,J) << endl;
   }
   ofstream outfile("test2.txt");
   outfile << energies << endl;
@@ -166,15 +162,16 @@ int main()
 {
   srand(clock());
 
-  int L  = 10;
+  int L  = 5;
   int J = 1;
   mat spin_matrix = initialize_matrix_ordered(L);
 
 
-  int mc_cycles = 1E6;
-  for(int i=0;i<mc_cycles;i++){
-    cout << i << endl;
-    MC_solve(spin_matrix,L,J,mc_cycles);
+  int mc_cycles = 1E4;
+  MC_solve(spin_matrix,L,J,mc_cycles);
+  for(int i=0;i<1;i++){
+    //cout << i << endl;
+
     //MC_step(spin_matrix,L,J);
     //cout << MC_step(spin_matrix,L,J) << endl;
 
