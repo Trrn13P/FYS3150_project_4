@@ -1,5 +1,6 @@
 #include <iostream>
 #include <cmath>
+#include <fstream>
 
 #include <omp.h>
 #include <time.h>
@@ -109,9 +110,8 @@ mat initialize_matrix_ordered(int L){
 }
 
 
-float MC_step(mat spin_matrix,int L, float J){
-  float T = 1.2; float k = 1;
-  float beta = k*T;
+float MC_step(mat spin_matrix,int L, float J, float exp_precalc[17]){
+
 
   float r = random_between_zero_and_one();
   int i = random_index(0,L-1);
@@ -121,41 +121,63 @@ float MC_step(mat spin_matrix,int L, float J){
   spin_matrix(i,j) = minus_one_or_one();
 
   float deltaE = local_energy(spin_matrix,i,j,L)-E_j;
-  cout << deltaE << endl;
 
+  int index = round((deltaE+16)/2);
+  float exponential_func = exp_precalc[index];
 
-  //if(r<=exp(-beta*deltaE)){
-  //  E_i = E_i+deltaE;
-  //}
-  return 1.0;
-  //return deltaE;
+  /* Metropolis test */
+  float a = r-exponential_func;
+  float b = a/abs(a);
+  float c = (1-b)/2;
+  return c*deltaE;
 }
 
-/*
-void MC_solve(mat spin_matrix,int L,float J){
-  float E = 0;
-  float M = 0;
-  float deltaE;
-  for(int i=0;i<mc_cycles;i++){
-    deltaE = MC_step(spin_matrix,L,J);
-    E+=deltaE;
+
+void MC_solve(mat spin_matrix,int L,float J,int mc_cycles){
+
+
+  float T = 1.2; float k = 1;
+  float beta = k*T;
+
+  float exp_precalc[17];
+  float deltaE_precalc[17]={-16,-14,-12,-10,-8,-6,-4,-2,0,2,4,6,8,10,12,14,16};
+  for (int i=0;i<17;i++){
+    exp_precalc[i]=exp(-beta*deltaE_precalc[i]);
   }
+
+
+  float deltaE;
+  vec energies = zeros(mc_cycles);
+  energies(0) = system_energy(spin_matrix,L,J);
+
+  for(int i=1;i<mc_cycles;i++){
+    deltaE = MC_step(spin_matrix,L,J,exp_precalc);
+    energies(i)=energies(i-1)+ deltaE;
+  }
+  ofstream outfile("test2.txt");
+  outfile << energies << endl;
+  outfile.close();
 }
-*/
+
 
 
 
 int main()
 {
   srand(clock());
-  //srand(1);
 
-  int L  = 100;
+  int L  = 10;
   int J = 1;
-  mat spin_matrix = initialize_matrix_random(L);
+  mat spin_matrix = initialize_matrix_ordered(L);
 
-  for(int i=0;i<1000;i++){
-    MC_step(spin_matrix,L,J);
+
+  int mc_cycles = 1E6;
+  for(int i=0;i<mc_cycles;i++){
+    cout << i << endl;
+    MC_solve(spin_matrix,L,J,mc_cycles);
+    //MC_step(spin_matrix,L,J);
+    //cout << MC_step(spin_matrix,L,J) << endl;
+
     //cout << minus_one_or_one() << endl;
   //
 
@@ -163,6 +185,7 @@ int main()
   //spin_matrix.print();
   //cout << system_energy(spin_matrix,L,J) << endl;
 }
+
 
 
   //cout << system_energy(spin_matrix,L,J) << endl;
