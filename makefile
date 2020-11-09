@@ -5,7 +5,7 @@ LIB = -larmadillo -llapack -lblas
 all: compile execute
 
 compile:
-	${CPPflags} main.cpp -o ./main.out ${LIB}
+	${CPPflags} main.cpp MC_solver.cpp -o ./main.out ${LIB}
 
 execute:
 	./main.out
